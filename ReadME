@@ -1,22 +1,48 @@
-# AGENTS.md
+# Gaming Community App
 
-## Project
-One line: what the app does, and who it's for.
+A gaming community platform that helps gamers find and connect with other players based on game, platform, region, rank, and other preferences.
 
-## Stack
-Frontend: ...  Backend: ...  Database: ...  Hosting: ...
+## About the Project
 
-## Commands
-Install: npm install
-Run locally: npm run dev
-Test: npm test
+Finding compatible people to play with can be difficult, especially when players are looking for teammates who play the same game, use the same platform, live in a compatible region, or have a similar skill level.
 
-## Rules
-- One story per PR. Keep changes small.
-- Write or update tests for every change.
-- Never commit secrets or .env files.
-- Ask before adding a new dependency.
-- Only use database columns that exist in /db/schema.sql.
+Our goal is to create a community where gamers can discover other players, interact with gaming communities, and connect with people they actually want to play with.
 
-## Things you got wrong before
-- (add a line every time the agent repeats a mistake)
+## Core Features
+
+- Create a gamer account
+- Create and customize a gamer profile
+- Find gamers based on game, platform, region, and rank
+- Join gaming communities
+- Create posts
+- Comment on posts
+- Follow other gamers
+- Search across the platform
+- Use tags and flairs
+- Mention other users
+
+## Project Status
+
+Currently in development for Fall 2026.
+
+## Team
+
+Enrique Garcia, Marvin Noel, Aryan Khare, Christian Naval, Dominique Rogucki, Isaiah Rodriguez
+
+## Technology Stack
+
+Technology choices are currently being finalized.
+
+## Project Management
+
+Development is organized using GitHub Issues, user stories, acceptance criteria, pull requests, and a GitHub Project board.
+
+Our workflow is:
+
+`Backlog → Ready → In Progress → In Review → Done`
+
+## Documentation
+
+- `AGENTS.md` — Development guidelines and instructions for coding agents.
+- GitHub Issues — User stories and acceptance criteria.
+- GitHub Projects — Development workflow and task tracking.
