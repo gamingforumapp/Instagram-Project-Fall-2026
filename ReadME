@@ -1,4 +1,3 @@
-# CS-Project-Fall-2026
 # AGENTS.md
 
 ## Project
@@ -20,4 +19,4 @@ Test: npm test
 - Only use database columns that exist in /db/schema.sql.
 
 ## Things you got wrong before
-- (add a line every time the agent repeats a mistake) 
+- (add a line every time the agent repeats a mistake)
