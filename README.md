@@ -27,7 +27,7 @@ Currently in development for Fall 2026.
 
 ## Team
 
-Enrique Garcia, Marvin Noel, Aryan Khare, Christian Naval, Dominic Rogucki, Isaiah Rodriguez
+Enrique Garcia, Marven Noel, Aryan Khare, Christian Naval, Dominic Rogucki, Isaiah Rodriguez
 
 ## Technology Stack
 
