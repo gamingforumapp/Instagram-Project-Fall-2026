@@ -46,3 +46,5 @@ Our workflow is:
 - `AGENTS.md` — Development guidelines and instructions for coding agents.
 - GitHub Issues — User stories and acceptance criteria.
 - GitHub Projects — Development workflow and task tracking.
+
+Isaiah - New Team Member
