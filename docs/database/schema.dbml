@@ -1,0 +1,392 @@
+Project Faction {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Proposed database design (reviewed 2026-10-15, updated 2026-10-16 with the team's answers).
+
+    Team decisions reflected here
+    - A "forum" (#5) is a community.
+    - "Subposts" (#3) are Reddit-style threads: nested comments under a post.
+    - Spoiler/NSFW are post settings (posts.is_spoiler, posts.is_nsfw), not flairs, so the blur
+      also applies to profile posts and wherever a post is shown (#10).
+    - Communities have moderators (community_members.role). A cap on moderators is decided later.
+    - Posts can belong to a community or to the author's profile (community_id NULL).
+      A profile shows the user's posts and comments together, newest first.
+    - When deleting an account, the user chooses to keep or delete their posts.
+      Kept posts and comments stay up with author_id NULL ("[deleted]").
+
+    How to read this file
+    - Tables outside the "soon_features" group are needed by the open user stories (#1-#19).
+    - Tables inside "soon_features" are for features with no stories yet (clips, game reviews).
+    - Columns whose note starts with SOON belong to find-players / game discovery. They are
+      nullable, so they can be added now or in a later migration.
+
+    This file is a DIAGRAM, not the migration
+    - Do not run the dbdiagram / dbml2sql SQL export against Supabase. It would try to create
+      the auth schema and auth.users, it turns posts.score and posts.search_vector into plain
+      columns, and it has no RLS, grants, policies, triggers or functions.
+    - The migration is supabase/migrations/20261016183754_init_schema.sql (reviewed by a teammate).
+    - Things DBML cannot express are written in notes: generated columns (search_vector),
+      GIN indexes, triggers, RLS policies, grants and Storage buckets.
+
+    Left out on purpose (later): comment votes, direct messages, blocks/reports, saved posts,
+    community icons/banners, URL slugs for communities, a moderator cap, reposts,
+    Realtime live counts, pg_trgm search indexes, an index on posts (community_id, score),
+    numeric rank ordering, length caps for review text.
+  '''
+}
+
+// ---------------------------------------------------------------
+// Accounts and profiles
+// ---------------------------------------------------------------
+
+Table auth.users {
+  id uuid [pk]
+  Note: 'Existing Supabase Auth table - do not recreate'
+}
+
+Table profiles {
+  id uuid [pk, note: 'Same value as auth.users.id. No default: the sign-up trigger copies it.']
+  username varchar(30) [unique, note: 'Lowercase only. NULL until the user picks one (OAuth sign-ups, or the name was taken at sign-up).']
+  display_name varchar(100) [note: 'Any casing the user likes, e.g. CoolGamer']
+  bio varchar(300)
+  avatar_url text [note: 'Full URL: the OAuth picture, or the public URL of avatars/{user_id}/{random}.webp']
+  region text [check: `region in ('na', 'latam', 'eu', 'mea', 'asia', 'oce')`, note: 'SOON (find players). Coarse region only, for privacy.']
+  created_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `username ~ '^[a-z0-9_]{3,30}$'` [name: 'profiles_username_format']
+  }
+
+  Note: '''
+    One row per auth user, created by an AFTER INSERT trigger on auth.users
+    (public.handle_new_user, security definer, set search_path = '').
+    Readable by other users, so never copy email or other private data here.
+  '''
+}
+
+Table gamer_tags {
+  user_id uuid [not null]
+  platform text [not null, check: `platform in ('steam', 'psn', 'xbox', 'discord')`, note: 'Account network. Extend this list for riot, battlenet...']
+  handle varchar(100) [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, platform) [pk]
+  }
+
+  Note: 'Separate table so tags can be visible to signed-in users only, while profiles stay public.'
+}
+
+Table follows {
+  follower_id uuid [not null]
+  following_id uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (follower_id, following_id) [pk]
+    following_id
+  }
+
+  checks {
+    `follower_id <> following_id` [name: 'follows_no_self_follow']
+  }
+
+  Note: 'Follower/following counts are count queries, not stored columns.'
+}
+
+Table notifications {
+  id uuid [pk, default: `gen_random_uuid()`]
+  recipient_id uuid [not null]
+  actor_id uuid [not null, note: 'Who caused it (the person who mentioned you)']
+  type text [not null, check: `type in ('mention', 'reply', 'follow')`, note: 'Only mention is needed for #11']
+  post_id uuid
+  comment_id uuid
+  read_at timestamptz [note: 'NULL = unread']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (recipient_id, created_at)
+    actor_id
+    post_id
+    comment_id
+  }
+
+  checks {
+    `type = 'follow' or post_id is not null` [name: 'notifications_need_post']
+  }
+
+  Note: '''
+    Rows are created ONLY by AFTER INSERT triggers on posts and comments that find @username.
+    Users get select + update(read_at) on their own rows, and no insert.
+  '''
+}
+
+// ---------------------------------------------------------------
+// Games
+// ---------------------------------------------------------------
+
+Table games {
+  id uuid [pk, default: `gen_random_uuid()`]
+  external_id integer [not null, unique, note: 'Id from ONE external API: pick IGDB or RAWG']
+  name text [not null]
+  cover_url text
+  released_on date
+  summary text [note: 'SOON (discovery)']
+  genres "text[]" [note: 'SOON (discovery). Filter with .contains()']
+  platforms "text[]" [note: 'SOON (discovery)']
+  synced_at timestamptz [not null, default: `now()`]
+
+  Note: '''
+    Local cache of game data. Only server code using the secret key (service_role) writes here;
+    anon and authenticated can only read. Sprint 1: seed a few dozen games by hand.
+  '''
+}
+
+Table user_games {
+  user_id uuid [not null]
+  game_id uuid [not null]
+  is_favorite boolean [not null, default: true, note: 'Shown as favorite games on the profile (#7)']
+  platform text [check: `platform in ('pc', 'playstation', 'xbox', 'switch', 'mobile')`, note: 'SOON (find players). Hardware, not account network.']
+  rank_tier text [note: 'SOON (find players). Filterable, e.g. Gold']
+  rank_details jsonb [note: 'SOON (find players). Display only, e.g. division, RR, LP']
+  looking_for_group boolean [not null, default: false, note: 'SOON (find players)']
+  added_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, game_id) [pk]
+    game_id
+  }
+
+  Note: 'Games a user plays. One table serves favorites now and find-players later.'
+}
+
+// ---------------------------------------------------------------
+// Communities ("forums" in #5 are communities)
+// ---------------------------------------------------------------
+
+Table communities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, note: 'Unique ignoring case']
+  description varchar(1000)
+  game_id uuid [note: 'NULL = topic community not tied to one game, e.g. Game Tutorials']
+  created_by uuid [note: 'Who created it. NULL if they deleted their account. Moderators live in community_members.role.']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (`lower(name)`) [unique, name: 'communities_name_lower_key']
+    game_id
+    created_by
+  }
+
+  checks {
+    `char_length(trim(name)) >= 3` [name: 'communities_name_not_blank']
+  }
+}
+
+Table community_members {
+  user_id uuid [not null]
+  community_id uuid [not null]
+  role text [not null, default: 'member', check: `role in ('member', 'moderator', 'owner')`, note: 'owner = creator. Owners and moderators manage flairs; owners appoint moderators. Moderator cap decided later.']
+  joined_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, community_id) [pk]
+    community_id
+    (community_id, role) [name: 'community_members_role_idx']
+  }
+
+  Note: '''
+    Creating a community also inserts the creator here with role = owner (an AFTER INSERT
+    trigger on communities). Users may insert their own row only with role = member
+    (column-level grant on user_id, community_id; role keeps its default).
+    Only owners can change role, between member and moderator (RLS update policy).
+  '''
+}
+
+Table community_flairs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  community_id uuid [not null]
+  name varchar(30) [not null, note: 'e.g. Tutorial, LFG, Clip, Patch Notes']
+  color varchar(7) [check: `color ~ '^#[0-9a-fA-F]{6}$'`, note: 'hex, e.g. #ff4500']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (community_id, name) [unique]
+  }
+
+  Note: 'Owners and moderators of the community can insert/update/delete flairs (RLS checks community_members.role).'
+}
+
+// ---------------------------------------------------------------
+// Posts, comments, votes
+// ---------------------------------------------------------------
+
+Table posts {
+  id uuid [pk, default: `gen_random_uuid()`]
+  author_id uuid [note: 'NULL after the author deletes their account and chooses to keep their posts ("[deleted]")']
+  community_id uuid [note: 'NULL = profile post (shown on the author\'s profile and to followers)']
+  flair_id uuid [note: 'Only for community posts. RLS insert/update check: the flair must belong to the same community_id']
+  title varchar(200) [not null]
+  content text [not null, default: '']
+  image_path text [note: 'Path in the post-images bucket, e.g. {user_id}/{random}.webp. NULL = no image.']
+  is_spoiler boolean [not null, default: false, note: 'Blurred until clicked (#10). A post setting, so it works on community and profile posts alike.']
+  is_nsfw boolean [not null, default: false, note: 'Blurred until clicked (#10). Can be combined with any flair.']
+  upvote_count integer [not null, default: 0, note: 'Changed only by the trigger on post_votes']
+  downvote_count integer [not null, default: 0, note: 'Changed only by the trigger on post_votes']
+  score integer [note: 'SQL: generated always as (upvote_count - downvote_count) stored. Used for the Top sort. DBML cannot express generated columns; write it by hand.']
+  search_vector tsvector [note: '''SQL: generated always as (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, ''))) stored, plus a GIN index. Write both by hand in the migration.''']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [note: 'Set by a trigger when the author edits (not when votes change). NULL = never edited.']
+
+  indexes {
+    (community_id, created_at) [name: 'posts_community_feed_idx']
+    (author_id, created_at) [name: 'posts_author_idx']
+    flair_id
+  }
+
+  checks {
+    `char_length(trim(title)) > 0` [name: 'posts_title_not_blank']
+    `char_length(content) <= 40000` [name: 'posts_content_length']
+    `upvote_count >= 0 and downvote_count >= 0` [name: 'posts_counts_not_negative']
+    `community_id is not null or flair_id is null` [name: 'posts_profile_posts_have_no_flair']
+  }
+
+  Note: '''
+    Users may insert/update only the columns they are allowed to edit (column-level grants),
+    so they cannot set vote counts, created_at or search_vector themselves.
+    Profile page (#7): the user's posts and comments merged and sorted by created_at desc,
+    using posts_author_idx and comments (author_id, created_at).
+  '''
+}
+
+Table comments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  post_id uuid [not null]
+  parent_comment_id uuid [note: 'NULL = top-level comment; otherwise the comment being replied to (Reddit-style thread)']
+  author_id uuid [note: 'NULL after the author deletes their account and keeps their content (replies stay)']
+  content text [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz
+  deleted_at timestamptz [note: 'Soft delete: set this and content = empty; UI shows [deleted]']
+
+  indexes {
+    (post_id, created_at)
+    (author_id, created_at)
+    parent_comment_id
+  }
+
+  checks {
+    `deleted_at is null or content = ''` [name: 'comments_deleted_have_no_text']
+    `deleted_at is not null or char_length(trim(content)) > 0` [name: 'comments_not_blank']
+    `char_length(content) <= 10000` [name: 'comments_content_length']
+  }
+
+  Note: 'Load all comments of a post ordered by created_at and nest them in JavaScript by parent_comment_id.'
+}
+
+Table post_votes {
+  user_id uuid [not null]
+  post_id uuid [not null]
+  value smallint [not null, check: `value in (-1, 1)`, note: '+1 upvote, -1 downvote. Remove a vote = delete the row.']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, post_id) [pk]
+    post_id
+  }
+
+  Note: 'An AFTER INSERT/UPDATE/DELETE trigger keeps posts.upvote_count and downvote_count in sync.'
+}
+
+// ---------------------------------------------------------------
+// SOON: features with no user stories yet
+// ---------------------------------------------------------------
+
+Table clips {
+  id uuid [pk, default: `gen_random_uuid()`]
+  post_id uuid [not null, unique, note: 'Each clip is shared through a post (comments, votes, feeds, search for free)']
+  uploader_id uuid [note: 'NULL if the uploader deleted their account and kept their posts']
+  game_id uuid
+  storage_path text [not null, unique, note: 'clips bucket: {uploader_id}/{clip_id}.mp4']
+  thumbnail_path text
+  size_bytes bigint [not null, note: 'Display only; the bucket enforces the real size limit']
+  duration_seconds integer
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (game_id, created_at)
+    (uploader_id, created_at)
+  }
+}
+
+Table game_reviews {
+  id uuid [pk, default: `gen_random_uuid()`]
+  game_id uuid [not null]
+  author_id uuid [not null]
+  rating smallint [not null, check: `rating between 1 and 5`, note: 'Scale is a team choice; 1-5 stars by default']
+  body text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz
+
+  indexes {
+    (author_id, game_id) [unique, note: 'One review per user per game']
+    (game_id, created_at)
+  }
+
+  Note: 'Average rating: avg(rating) in a view created with (security_invoker = true), not a stored column.'
+}
+
+TableGroup soon_features [color: #8a8a8a] {
+  clips
+  game_reviews
+
+  Note: '''
+    Not needed by any open story yet. Find-players and game discovery do not need new
+    tables: see the SOON columns on profiles, user_games and games.
+  '''
+}
+
+// ---------------------------------------------------------------
+// Relationships (delete rules only work on these long-form lines, not inline refs)
+// One-to-one '-' refs: DBML puts the foreign key on the SECOND column.
+// ---------------------------------------------------------------
+
+Ref: auth.users.id - profiles.id [delete: cascade]
+
+Ref: gamer_tags.user_id > profiles.id [delete: cascade]
+Ref: follows.follower_id > profiles.id [delete: cascade]
+Ref: follows.following_id > profiles.id [delete: cascade]
+
+Ref: notifications.recipient_id > profiles.id [delete: cascade]
+Ref: notifications.actor_id > profiles.id [delete: cascade]
+Ref: notifications.post_id > posts.id [delete: cascade]
+Ref: notifications.comment_id > comments.id [delete: cascade]
+
+Ref: user_games.user_id > profiles.id [delete: cascade]
+Ref: user_games.game_id > games.id [delete: cascade]
+
+Ref: communities.game_id > games.id [delete: set null]
+Ref: communities.created_by > profiles.id [delete: set null]
+Ref: community_members.user_id > profiles.id [delete: cascade]
+Ref: community_members.community_id > communities.id [delete: cascade]
+Ref: community_flairs.community_id > communities.id [delete: cascade]
+
+// Account deletion: the delete-account endpoint first deletes the user's posts if they
+// chose "delete my posts"; otherwise these set null and the posts show "[deleted]".
+Ref: posts.author_id > profiles.id [delete: set null]
+Ref: posts.community_id > communities.id [delete: cascade]
+Ref: posts.flair_id > community_flairs.id [delete: set null]
+
+Ref: comments.post_id > posts.id [delete: cascade]
+Ref: comments.parent_comment_id > comments.id [delete: cascade]
+Ref: comments.author_id > profiles.id [delete: set null]
+
+Ref: post_votes.user_id > profiles.id [delete: cascade]
+Ref: post_votes.post_id > posts.id [delete: cascade]
+
+Ref: posts.id - clips.post_id [delete: cascade]
+Ref: clips.uploader_id > profiles.id [delete: set null]
+Ref: clips.game_id > games.id [delete: set null]
+
+Ref: game_reviews.game_id > games.id [delete: cascade]
+Ref: game_reviews.author_id > profiles.id [delete: cascade]
