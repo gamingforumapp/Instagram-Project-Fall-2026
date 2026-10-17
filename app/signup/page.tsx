@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignUpPage() {
+  const router = useRouter()
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,6 +18,12 @@ export default function SignUpPage() {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+
+    const trimmedUsername = username.trim().toLowerCase()
+    if (trimmedUsername && !/^[a-z0-9_]{3,20}$/.test(trimmedUsername)) {
+      setError('Username must be 3–20 characters and contain only lowercase letters, numbers, or underscores.')
+      return
+    }
 
     const trimmedEmail = email.trim()
 
@@ -35,6 +44,12 @@ export default function SignUpPage() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+          data: {
+            username: trimmedUsername || undefined,
+          },
+        },
       })
 
       if (signUpError) {
@@ -56,9 +71,17 @@ export default function SignUpPage() {
         return
       }
 
+      // If user is auto-confirmed / session returned immediately, take them straight to profile
+      if (data.session) {
+        router.push('/profile')
+        router.refresh()
+        return
+      }
+
       setSuccess(
-        'Account created successfully! Check your email to confirm your account.'
+        'Account created successfully! Check your email to confirm your account and access your gamer profile.'
       )
+      setUsername('')
       setEmail('')
       setPassword('')
     } catch (err) {
@@ -80,7 +103,7 @@ export default function SignUpPage() {
       const { error: oAuthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
         },
       })
       if (oAuthError) {
@@ -128,6 +151,29 @@ export default function SignUpPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Username <span className="text-xs font-normal text-zinc-400">(optional)</span>
+            </label>
+            <input
+              id="username"
+              type="text"
+              autoComplete="username"
+              maxLength={20}
+              disabled={loading}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="gamer_tag"
+              className="mt-1 block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3.5 py-2.5 text-zinc-900 placeholder-zinc-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-indigo-400 dark:focus:bg-zinc-900"
+            />
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Letters, numbers, and underscores only. Max 20 characters.
+            </p>
+          </div>
+
           <div>
             <label
               htmlFor="email"

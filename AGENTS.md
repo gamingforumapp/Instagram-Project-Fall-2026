@@ -16,6 +16,7 @@ Install: npm install
 Run locally: npm run dev (http://localhost:3000)
 Build: npm run build
 Lint: npm run lint
+Database types: npm run db:types (needs a one-time `npx supabase login`)
 Test: no test runner yet. Ask before adding one.
 
 ## Rules
@@ -23,7 +24,15 @@ Test: no test runner yet. Ask before adding one.
 - Once a test runner exists, write or update tests for every change. Until then, say in the PR how you checked the change.
 - Never commit secrets, `.env`, or `.env*.local` files. `.env.example` (placeholder values only) is committed.
 - Ask before adding a new dependency.
-- Don't guess at existing Supabase tables, columns, or storage buckets. Check the Supabase dashboard or ask. If a story needs a new table, say so and write the SQL (with RLS, grants, and policies) for a teammate to review and run.
+- Don't guess at existing Supabase tables, columns, or storage buckets. Check `lib/database.types.ts` (exact columns) and `docs/database/schema.dbml` (the diagram and design notes), or ask. If a story needs a new table, say so and write the SQL (with RLS, grants, and policies) for a teammate to review and run.
+
+## Database
+- The schema lives in `supabase/migrations/`. Every schema change is a NEW migration file named `<YYYYMMDDHHMMSS>_<what_it_does>.sql`. Never edit a migration that has already been run on Supabase.
+- Migrations are reviewed in a PR, then run once by hand in the Supabase SQL Editor after merging. Say in the PR when it has been run.
+- After a migration has been run, regenerate the types with `npm run db:types` and commit `lib/database.types.ts`. Also update `docs/database/schema.dbml` to match.
+- Never edit `lib/database.types.ts` by hand. It is generated from the live database.
+- The Supabase clients in `lib/supabase/` are typed with `Database`, so table and column names are checked by TypeScript. Don't cast query results to `any`. For component props, use the generated helpers: `Tables<'posts'>` (a row), `TablesInsert<'posts'>`, `TablesUpdate<'posts'>`.
+- The types say which columns exist, not which ones a user may write. Grants and RLS in the migration decide that (e.g. `posts.upvote_count` exists but users can never set it).
 
 ## Next.js 16
 Your training data is likely out of date. Follow these:
