@@ -36,12 +36,20 @@ export default async function Home({ searchParams }: HomePageProps) {
 
       <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
         {profile ? (
-          <Link
-            href="/profile"
-            className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-indigo-500"
-          >
-            Go to Your Profile
-          </Link>
+          <>
+            <Link
+              href="/profile"
+              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-indigo-500"
+            >
+              Go to Your Profile
+            </Link>
+            <Link
+              href="/posts/new"
+              className="rounded-xl border border-zinc-300 px-6 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              Create a post
+            </Link>
+          </>
         ) : (
           <>
             <Link
