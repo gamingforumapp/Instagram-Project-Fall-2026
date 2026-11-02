@@ -254,6 +254,7 @@ Table posts {
   Note: '''
     Users may insert/update only the columns they are allowed to edit (column-level grants),
     so they cannot set vote counts, created_at or search_vector themselves.
+    RLS insert check: a community post requires a community_members row for that community.
     Profile page (#7): the user's posts and comments merged and sorted by created_at desc,
     using posts_author_idx and comments (author_id, created_at).
   '''

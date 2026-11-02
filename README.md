@@ -30,8 +30,11 @@ Currently in development for Fall 2026.
 Enrique Garcia, Marven Noel, Aryan Khare, Christian Naval, Dominic Rogucki, Isaiah Rodriguez
 
 ## Technology Stack
-
-Technology choices are currently being finalized.
+- **Design:** Figma (wireframes and clickable prototype)
+- **Database and auth:** Supabase
+- **Hosting and previews:** Vercel
+- **Version control:** GitHub
+- **Front end:** TBD
 
 ## Project Management
 
