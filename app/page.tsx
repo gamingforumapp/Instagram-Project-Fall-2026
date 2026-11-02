@@ -7,12 +7,18 @@ export default function Home() {
       <p className="text-lg text-zinc-600 dark:text-zinc-400">
         This is our CS491 Fall 2026 project!!!!
       </p>
-      <div className="mt-4">
+      <div className="mt-4 flex gap-3">
         <Link
           href="/signup"
           className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500"
         >
           Go to Sign Up
+        </Link>
+        <Link
+          href="/posts/new"
+          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500"
+        >
+          Create a post
         </Link>
       </div>
     </main>
