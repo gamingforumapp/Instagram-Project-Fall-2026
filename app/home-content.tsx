@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -31,6 +32,20 @@ const dateFormat = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeZone: 'UTC',
 })
+
+// The crest sits next to the word FACTION, so it has empty alt text. The clip
+// hides the tan corners that are baked into the Figma export.
+function Crest({ size, className }: { size: number; className?: string }) {
+  return (
+    <Image
+      src="/faction-crest.svg"
+      alt=""
+      width={size}
+      height={size}
+      className={`[clip-path:inset(1.5%_round_23%)] ${className ?? ''}`}
+    />
+  )
+}
 
 function ComingSoonAction({ label }: { label: string }) {
   return (
@@ -92,8 +107,12 @@ export default function HomeContent({
     <div className="min-h-screen bg-[#07090b] text-[#f4f1eb]">
       <header className="border-b border-[#1e2228] bg-[#090b0e]">
         <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-5 py-5">
-          <Link href="/" className="text-xl font-bold tracking-wide text-[#e8c36b]">
-            ♜ FACTION
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xl font-bold tracking-wide text-[#e8c36b]"
+          >
+            <Crest size={32} />
+            FACTION
           </Link>
           <label className="min-w-48 flex-1 sm:max-w-sm">
             <span className="sr-only">Search public content</span>
@@ -404,7 +423,8 @@ export default function HomeContent({
       <footer className="mt-10 border-t border-[#1e2228] px-5 py-7">
         <div className="mx-auto flex max-w-6xl justify-between text-sm">
           <span className="font-bold text-[#e9c980]">
-            ♜ FACTION{' '}
+            <Crest size={20} className="mr-1.5 inline-block align-text-bottom" />
+            FACTION{' '}
             <span className="ml-3 font-normal text-zinc-500">
               Play better, together.
             </span>
