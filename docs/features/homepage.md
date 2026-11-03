@@ -1,7 +1,7 @@
 # Homepage
 
 **Status:** READY FOR PR (design and crest approved; real sign-in tested; create an issue first)
-**Issue:** None yet. Create one before the PR.
+**Issue:** #29
 **Branch:** feature/homepage
 
 ## Scope
