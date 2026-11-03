@@ -1,6 +1,6 @@
 # Homepage
 
-**Status:** VERIFYING (design and crest approved; a real sign-in test is still open)
+**Status:** READY FOR PR (design and crest approved; real sign-in tested; create an issue first)
 **Issue:** None yet. Create one before the PR.
 **Branch:** feature/homepage
 
@@ -65,9 +65,14 @@ Preview guard, checked with `next start` on the production build:
 - With no `VERCEL_ENV`: `?preview=signed-in` is ignored and the visitor stays a guest.
 - With `VERCEL_ENV=preview`: `?preview=signed-in` shows the fake profile.
 
+Checked by hand with a real account on localhost (2026-11-03, by Enrique):
+- Sign in works.
+- The homepage loads correctly.
+- The user's profile can be opened.
+- Sign out works.
+
 Not checked:
-- A real sign-in. The signed-in layout was only seen through the fake preview.
-- A real sign-out. Log out ran only in the fake preview, with no session.
+- The Create post link with a real session. In the fake preview it redirects to `/login`, because there is no session.
 - The `/profile/{username}` link from a post. None of the 8 live profiles has a username, so it never shows.
 - The spoiler filter on a real spoiler post. The live project has none, and no test row was added.
 - A failed Supabase request showing the error message.
