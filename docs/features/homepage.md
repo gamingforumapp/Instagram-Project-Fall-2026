@@ -70,9 +70,9 @@ Checked by hand with a real account on localhost (2026-11-03, by Enrique):
 - The homepage loads correctly.
 - The user's profile can be opened.
 - Sign out works.
+- While signed in, the homepage's Create post button opens the post creation page. No post was published.
 
 Not checked:
-- The Create post link with a real session. In the fake preview it redirects to `/login`, because there is no session.
 - The `/profile/{username}` link from a post. None of the 8 live profiles has a username, so it never shows.
 - The spoiler filter on a real spoiler post. The live project has none, and no test row was added.
 - A failed Supabase request showing the error message.
