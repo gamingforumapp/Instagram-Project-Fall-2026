@@ -1,6 +1,6 @@
 # Homepage
 
-**Status:** READY FOR PR (design and crest approved; real sign-in tested; create an issue first)
+**Status:** READY FOR PR (design and crest approved; real sign-in and Create post navigation tested; Issue #29 created)
 **Issue:** #29
 **Branch:** feature/homepage
 
