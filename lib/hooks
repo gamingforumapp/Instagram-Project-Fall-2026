@@ -1,0 +1,9 @@
+// lib/hooks/usePostComments.ts
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client' // Adjust to match your existing client helper in lib/
+
+export function usePostComments(postId: string) {
+  // Realtime hook logic here
+}
