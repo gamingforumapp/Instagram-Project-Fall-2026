@@ -1,41 +1,52 @@
 import 'server-only'
 
+import type { FeedPost } from '@/components/post-card'
+import type { Tables } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
-import type { Profile } from '@/types/profile'
+import type { GamerTags, Profile } from '@/types/profile'
 
-const FALLBACK_PROFILE: Profile = {
+export type ProfilePost = FeedPost & {
+  communityName: string | null
+}
+
+export type ProfileCommunity = Pick<Tables<'communities'>, 'id' | 'name'> & {
+  role: Tables<'community_members'>['role']
+}
+
+const PROFILE_COLUMNS =
+  'id, username, display_name, bio, avatar_url, region, created_at'
+
+const FALLBACK_PROFILE: Omit<Profile, 'is_own_profile'> = {
   id: '00000000-0000-0000-0000-000000000001',
   username: 'nightowl_kai',
   display_name: 'Kai Rivera',
   avatar_url: null,
   created_at: '2026-03-01T00:00:00.000Z',
   bio: 'Soulslike addict, squad-based shooter enjoyer. Usually on after 9pm. Always down to help with bosses.',
-  friends_count: 48,
-  friend_requests_count: 12,
-  contributions_count: 158,
+  region: null,
   gamer_tags: {
     psn: 'nightowl_kai',
     xbox: 'NightOwl Kai',
     steam: 'nightowlkai',
     discord: 'nightowl#1234',
   },
-  status: {
-    is_online: true,
-    current_game: 'Helldivers 2',
-    usually_on: '9pm – 1am ET',
-    mic: 'Yes',
-    playstyle: 'Co-op, chill',
-    region: 'NA East',
-    connection_tags: [
-      '#Co-op',
-      '#NightOwl',
-      '#MicOn',
-      '#Crossplay',
-      '#HelpWithBosses',
-      '#Ranked',
-      '#Casual',
-    ],
-  },
+}
+
+function toGamerTags(
+  rows: Pick<Tables<'gamer_tags'>, 'platform' | 'handle'>[] | null
+): GamerTags {
+  const tags: GamerTags = {}
+  for (const { platform, handle } of rows ?? []) {
+    if (
+      platform === 'psn' ||
+      platform === 'xbox' ||
+      platform === 'steam' ||
+      platform === 'discord'
+    ) {
+      tags[platform] = handle
+    }
+  }
+  return tags
 }
 
 /**
@@ -53,49 +64,20 @@ export async function getProfileByUsername(username: string): Promise<Profile> {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, display_name, bio, avatar_url, region, created_at')
+      .select(PROFILE_COLUMNS)
       .ilike('username', cleanUsername)
       .maybeSingle()
 
     if (!error && data) {
-      const isOwnProfile = Boolean(currentUserId && currentUserId === data.id)
-
-      // Query gamer tags for this user
       const { data: tagsData } = await supabase
         .from('gamer_tags')
         .select('platform, handle')
         .eq('user_id', data.id)
 
-      const tags: { psn?: string; xbox?: string; steam?: string; discord?: string } = {}
-      if (tagsData && tagsData.length > 0) {
-        for (const tag of tagsData) {
-          if (tag.platform === 'psn') tags.psn = tag.handle
-          if (tag.platform === 'xbox') tags.xbox = tag.handle
-          if (tag.platform === 'steam') tags.steam = tag.handle
-          if (tag.platform === 'discord') tags.discord = tag.handle
-        }
-      }
-
       return {
-        id: data.id,
-        username: data.username || cleanUsername,
-        display_name: data.display_name || data.username || cleanUsername,
-        avatar_url: data.avatar_url,
-        created_at: data.created_at,
-        bio: data.bio ?? undefined,
-        friends_count: 0,
-        friend_requests_count: 0,
-        contributions_count: 0,
-        gamer_tags: tags,
-        status: {
-          is_online: true,
-          usually_on: 'Evenings',
-          mic: 'Yes',
-          playstyle: 'Casual',
-          region: data.region ? data.region.toUpperCase() : 'NA',
-          connection_tags: ['#Co-op', '#Crossplay'],
-        },
-        is_own_profile: isOwnProfile,
+        ...data,
+        gamer_tags: toGamerTags(tagsData),
+        is_own_profile: Boolean(currentUserId && currentUserId === data.id),
       }
     }
   } catch (err) {
@@ -129,46 +111,19 @@ export async function getCurrentUserProfile(
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, display_name, bio, avatar_url, region, created_at')
+      .select(PROFILE_COLUMNS)
       .eq('id', userId)
       .maybeSingle()
 
     if (!error && data) {
-      // Query gamer tags for this user
       const { data: tagsData } = await supabase
         .from('gamer_tags')
         .select('platform, handle')
         .eq('user_id', data.id)
 
-      const tags: { psn?: string; xbox?: string; steam?: string; discord?: string } = {}
-      if (tagsData && tagsData.length > 0) {
-        for (const tag of tagsData) {
-          if (tag.platform === 'psn') tags.psn = tag.handle
-          if (tag.platform === 'xbox') tags.xbox = tag.handle
-          if (tag.platform === 'steam') tags.steam = tag.handle
-          if (tag.platform === 'discord') tags.discord = tag.handle
-        }
-      }
-
       return {
-        id: data.id,
-        username: data.username || 'gamer',
-        display_name: data.display_name || data.username || 'Gamer',
-        avatar_url: data.avatar_url,
-        created_at: data.created_at,
-        bio: data.bio ?? undefined,
-        friends_count: 0,
-        friend_requests_count: 0,
-        contributions_count: 0,
-        gamer_tags: tags,
-        status: {
-          is_online: true,
-          usually_on: 'Evenings',
-          mic: 'Yes',
-          playstyle: 'Casual',
-          region: data.region ? data.region.toUpperCase() : 'NA',
-          connection_tags: ['#NewGamer', '#Co-op'],
-        },
+        ...data,
+        gamer_tags: toGamerTags(tagsData),
         is_own_profile: true,
       }
     }
@@ -177,4 +132,63 @@ export async function getCurrentUserProfile(
   }
 
   return null
+}
+
+/**
+ * Fetches a profile's newest posts. NSFW and spoiler posts stay out, the same
+ * as the homepage feed, until the blur from issue #10 exists.
+ */
+export async function getProfilePosts(
+  profileId: string
+): Promise<{ posts: ProfilePost[]; error: boolean }> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('posts')
+    .select(
+      'id, title, content, created_at, upvote_count, image_path, communities(name)'
+    )
+    .eq('author_id', profileId)
+    .eq('is_nsfw', false)
+    .eq('is_spoiler', false)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    return { posts: [], error: true }
+  }
+
+  return {
+    posts: data.map(({ image_path, communities, ...post }) => ({
+      ...post,
+      communityName: communities?.name ?? null,
+      imageUrl: image_path
+        ? supabase.storage.from('post-images').getPublicUrl(image_path).data
+            .publicUrl
+        : null,
+    })),
+    error: false,
+  }
+}
+
+/**
+ * Fetches the communities a profile has joined. Only signed-in users can read
+ * memberships, so this returns an empty list for signed-out visitors.
+ */
+export async function getProfileCommunities(
+  profileId: string
+): Promise<ProfileCommunity[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('community_members')
+    .select('role, communities(id, name)')
+    .eq('user_id', profileId)
+    .order('joined_at', { ascending: false })
+
+  if (error) {
+    return []
+  }
+
+  return data.flatMap(({ role, communities }) =>
+    communities ? [{ ...communities, role }] : []
+  )
 }

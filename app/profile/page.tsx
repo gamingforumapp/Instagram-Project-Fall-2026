@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserProfile } from '@/lib/profile/queries'
+import {
+  getCurrentUserProfile,
+  getProfileCommunities,
+  getProfilePosts,
+} from '@/lib/profile/queries'
 import ProfileContent from './profile-content'
 
 export const dynamic = 'force-dynamic'
@@ -30,5 +34,19 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   const profile = (await getCurrentUserProfile(isPreview)) || undefined
-  return <ProfileContent profile={profile} isOwnProfile={true} />
+  const [{ posts, error: postsError }, communities] = await Promise.all([
+    profile ? getProfilePosts(profile.id) : { posts: [], error: false },
+    profile ? getProfileCommunities(profile.id) : [],
+  ])
+
+  return (
+    <ProfileContent
+      profile={profile}
+      isOwnProfile={true}
+      posts={posts}
+      postsError={postsError}
+      communities={communities}
+      isSignedIn={Boolean(userId)}
+    />
+  )
 }

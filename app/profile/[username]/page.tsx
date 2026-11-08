@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
-import { getProfileByUsername } from '@/lib/profile/queries'
+import {
+  getProfileByUsername,
+  getProfileCommunities,
+  getProfilePosts,
+} from '@/lib/profile/queries'
+import { createClient } from '@/lib/supabase/server'
 import ProfileContent from '../profile-content'
 
 export const dynamic = 'force-dynamic'
@@ -26,11 +31,23 @@ export default async function ProfileUsernamePage({
 }: ProfileUsernameProps) {
   const { username } = await params
   const profile = await getProfileByUsername(username)
+  const supabase = await createClient()
+  const [{ data: claimsData }, { posts, error: postsError }, communities] =
+    await Promise.all([
+      supabase.auth.getClaims(),
+      getProfilePosts(profile.id),
+      getProfileCommunities(profile.id),
+    ])
+
   return (
     <ProfileContent
       profile={profile}
       initialUsername={username}
       isOwnProfile={profile.is_own_profile}
+      posts={posts}
+      postsError={postsError}
+      communities={communities}
+      isSignedIn={Boolean(claimsData?.claims?.sub)}
     />
   )
 }
