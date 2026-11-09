@@ -19,3 +19,5 @@ export default function Crest({
     />
   )
 }
+
+export { Crest }
