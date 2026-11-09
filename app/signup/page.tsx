@@ -71,16 +71,36 @@ export default function SignUpPage() {
         return
       }
 
-      // If user is auto-confirmed / session returned immediately, take them straight to profile
+      // 1. If user is auto-confirmed / session returned immediately, take them straight to profile
       if (data.session) {
         router.push('/profile')
         router.refresh()
         return
       }
 
-      setSuccess(
-        'Account created successfully! Check your email to confirm your account and access your gamer profile.'
-      )
+      // 2. Try immediate sign-in in case the project auto-confirmed or allows immediate session
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      })
+
+      if (signInData?.session) {
+        router.push('/profile')
+        router.refresh()
+        return
+      }
+
+      // 3. If email confirmation is required by the Supabase project
+      if (signInErr && signInErr.message.toLowerCase().includes('confirm')) {
+        setSuccess(
+          'Account created! Supabase email confirmation is currently enabled for this project. Please check your email (and spam folder) to confirm, or turn OFF "Confirm email" in the Supabase Dashboard (Authentication > Providers > Email) for instant automatic logins.'
+        )
+      } else {
+        setSuccess(
+          'Account created successfully! Please check your email to confirm your account and access your gamer profile.'
+        )
+      }
+
       setUsername('')
       setEmail('')
       setPassword('')
@@ -255,10 +275,12 @@ export default function SignUpPage() {
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-200 dark:border-zinc-700"></div>
+            <div className="w-full border-t border-zinc-200 dark:border-zinc-700" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-zinc-400 dark:bg-[#18181b]">Or continue with</span>
+            <span className="bg-white px-2 text-zinc-400 dark:bg-[#18181b]">
+              Or continue with
+            </span>
           </div>
         </div>
 
@@ -275,13 +297,13 @@ export default function SignUpPage() {
             type="button"
             onClick={() => handleOAuthSignUp('google')}
             disabled={loading}
-            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-300 bg-zinc-100 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
           >
             Google
           </button>
         </div>
 
-        <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="mt-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
           Already have an account?{' '}
           <Link
             href="/login"
