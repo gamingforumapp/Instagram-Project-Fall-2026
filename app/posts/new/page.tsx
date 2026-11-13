@@ -1,9 +1,12 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { SiteFooter } from '@/components/site-footer'
+import { SiteHeader } from '@/components/site-header'
+import { getViewer } from '@/lib/communities/queries'
 import { createClient } from '@/lib/supabase/server'
 import CreatePostForm from './create-post-form'
 
 const POSTING_RULES = [
-  'Remember the human',
   'Behave like you would in real life',
   'Look for the original source of content',
   'Search for duplicates before posting',
@@ -11,18 +14,17 @@ const POSTING_RULES = [
 ]
 
 export default async function CreatePostPage() {
-  const supabase = await createClient()
-
-  const { data: auth } = await supabase.auth.getClaims()
-  const userId = auth?.claims.sub
-  if (!userId) {
+  // getViewer checks the session with getClaims.
+  const viewer = await getViewer()
+  if (!viewer) {
     redirect('/login')
   }
 
+  const supabase = await createClient()
   const { data: memberships, error } = await supabase
     .from('community_members')
     .select('communities(id, name)')
-    .eq('user_id', userId)
+    .eq('user_id', viewer.userId)
 
   if (error) {
     throw new Error('Could not load your communities.')
@@ -33,38 +35,57 @@ export default async function CreatePostPage() {
     .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <main className="flex-1 bg-[#07080b] px-4 py-8 text-zinc-100">
-      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_19.5rem]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
-            Create post
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-            Create post
-          </h1>
+    <div className="min-h-screen bg-[#07090b] text-[#f4f1eb]">
+      <SiteHeader viewer={viewer} />
 
-          {communities.length > 0 ? (
-            <CreatePostForm userId={userId} communities={communities} />
-          ) : (
-            <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 text-sm text-zinc-300">
-              Join a community first, then come back to post in it.
-            </div>
-          )}
+      <main className="mx-auto max-w-6xl px-5 py-9">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div>
+            <p className="mb-2 text-xs font-semibold tracking-wider text-[#e9b74e]">
+              SHARE WITH YOUR FACTION
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Create post
+            </h1>
+
+            {communities.length > 0 ? (
+              <CreatePostForm userId={viewer.userId} communities={communities} />
+            ) : (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#292d34] bg-[#101319] p-5">
+                <div>
+                  <h2 className="text-sm font-semibold">
+                    You haven&apos;t joined a community yet
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    Join one first, then come back to post in it.
+                  </p>
+                </div>
+                <Link
+                  href="/communities"
+                  className="rounded-lg bg-[#e9b74e] px-3 py-2 text-sm font-semibold text-black"
+                >
+                  Browse communities
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <aside className="self-start rounded-xl border border-[#e9b74e] bg-[#17140f] p-5 lg:mt-[4.5rem]">
+            <h2 className="text-sm font-semibold text-[#e9c980]">
+              ◎ Posting Rules
+            </h2>
+            <ul className="mt-2 divide-y divide-[#2e261a] text-sm text-zinc-400">
+              {POSTING_RULES.map((rule) => (
+                <li key={rule} className="py-2.5">
+                  {rule}
+                </li>
+              ))}
+            </ul>
+          </aside>
         </div>
+      </main>
 
-        <aside className="self-start rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 lg:mt-16">
-          <h2 className="text-sm font-semibold text-white">
-            Posting to a community
-          </h2>
-          <ul className="mt-2 divide-y divide-zinc-800 text-sm text-zinc-300">
-            {POSTING_RULES.map((rule) => (
-              <li key={rule} className="py-2.5">
-                {rule}
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </div>
-    </main>
+      <SiteFooter viewer={viewer} />
+    </div>
   )
 }

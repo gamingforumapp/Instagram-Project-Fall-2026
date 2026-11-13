@@ -3,7 +3,8 @@ import { Crest } from '@/components/crest'
 import { LogoutButton } from '@/components/logout-button'
 
 interface SiteHeaderProps {
-  active: 'communities'
+  /** The nav item to highlight. Leave it out on pages with no nav item. */
+  active?: 'communities'
   /** The signed-in user, or null for a visitor. */
   viewer: { displayName: string } | null
 }
