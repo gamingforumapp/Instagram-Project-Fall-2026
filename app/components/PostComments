@@ -1,0 +1,12 @@
+// app/page.tsx
+import PostComments from './components/PostComments'
+
+export default function Home() {
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Feed</h1>
+      {/* Pass the target post UUID from your database */}
+      <PostComments postId="your-post-uuid-here" />
+    </main>
+  )
+}
