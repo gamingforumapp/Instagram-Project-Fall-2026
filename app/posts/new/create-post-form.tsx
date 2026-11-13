@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/database.types'
@@ -120,16 +121,19 @@ export default function CreatePostForm({
   const canSubmit = communityId !== '' && title.trim() !== '' && !loading
 
   const tabClass = (name: 'text' | 'images') =>
-    `rounded-t-lg border border-b-2 border-zinc-800 px-4 py-2 text-sm font-semibold transition-colors ${
+    `-mb-px border-b-2 px-1 pb-2 font-semibold transition-colors ${
       tab === name
-        ? 'border-b-amber-400 text-white'
-        : 'border-b-transparent text-zinc-400 hover:text-zinc-200'
+        ? 'border-[#e9b74e] text-[#e9b74e]'
+        : 'border-transparent text-zinc-400 hover:text-white'
     }`
 
+  const fieldClass =
+    'w-full rounded-lg border border-[#282c34] bg-[#11151b] text-sm text-[#f4f1eb] placeholder-zinc-500 outline-none focus:border-[#e9b74e]'
+
   return (
-    <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+    <form onSubmit={handleSubmit} className="mt-6 space-y-4">
       {errorMsg && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
           {errorMsg}
         </div>
       )}
@@ -137,9 +141,9 @@ export default function CreatePostForm({
       {posted && (
         <div
           role="status"
-          className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400"
+          className="rounded-lg border border-[#5c4426] bg-[#211a11] p-3 text-sm text-[#e7c788]"
         >
-          Your post has been published.
+          ◎ Your post has been published.
         </div>
       )}
 
@@ -152,7 +156,7 @@ export default function CreatePostForm({
           required
           value={communityId}
           onChange={(e) => setCommunityId(e.target.value)}
-          className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-3 text-sm font-medium text-zinc-200 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+          className={`${fieldClass} px-4 py-3`}
         >
           <option value="">Select a community</option>
           {communities.map((community) => (
@@ -163,7 +167,7 @@ export default function CreatePostForm({
         </select>
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-800">
+      <div className="flex gap-5 border-b border-[#1e2228] text-sm">
         <button
           type="button"
           aria-pressed={tab === 'text'}
@@ -182,7 +186,7 @@ export default function CreatePostForm({
         </button>
       </div>
 
-      <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="space-y-4 rounded-xl border border-[#292d34] bg-[#101319] p-4">
         <div className="relative">
           <label htmlFor="title" className="sr-only">
             Title
@@ -195,7 +199,7 @@ export default function CreatePostForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title*"
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950/60 py-3 pl-3 pr-20 text-sm text-white placeholder-zinc-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+            className={`${fieldClass} py-3 pl-4 pr-20`}
           />
           <span className="absolute inset-y-0 right-3 flex items-center text-xs text-zinc-500">
             {title.length}/{MAX_TITLE_LENGTH}
@@ -214,7 +218,7 @@ export default function CreatePostForm({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Body text (optional)"
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 text-sm text-white placeholder-zinc-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+              className={`${fieldClass} p-4`}
             />
             {image && (
               <p className="mt-2 text-xs text-zinc-400">
@@ -224,10 +228,7 @@ export default function CreatePostForm({
           </div>
         ) : (
           <div className="space-y-3">
-            <label
-              htmlFor="image"
-              className="block text-sm font-medium text-zinc-300"
-            >
+            <label htmlFor="image" className="block text-sm text-zinc-400">
               Image (optional): PNG, JPEG, WebP, or GIF, up to 5 MB
             </label>
             <input
@@ -236,7 +237,7 @@ export default function CreatePostForm({
               type="file"
               accept={Object.keys(IMAGE_EXTENSIONS).join(',')}
               onChange={handleImageChange}
-              className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-full file:border file:border-zinc-700 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-100 hover:file:bg-zinc-700"
+              className="block w-full text-sm text-zinc-400 file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-solid file:border-[#30343b] file:bg-transparent file:px-3 file:py-2 file:text-sm file:text-[#f4f1eb] hover:file:bg-[#171b22]"
             />
             {previewUrl && (
               <div className="space-y-2">
@@ -245,12 +246,12 @@ export default function CreatePostForm({
                 <img
                   src={previewUrl}
                   alt="Preview of the selected image"
-                  className="max-h-80 rounded-lg border border-zinc-800"
+                  className="max-h-80 rounded-lg border border-[#292d34]"
                 />
                 <button
                   type="button"
                   onClick={removeImage}
-                  className="text-xs font-semibold text-zinc-400 hover:text-zinc-200"
+                  className="rounded-lg border border-[#30343b] px-3 py-2 text-xs hover:bg-[#171b22]"
                 >
                   Remove image
                 </button>
@@ -260,17 +261,25 @@ export default function CreatePostForm({
         )}
       </div>
 
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {communityId === '' && (
+          <p className="mr-auto text-xs text-zinc-400">
+            ♙ Select a community to post.
+          </p>
+        )}
+        <Link
+          href="/"
+          className="rounded-lg border border-[#30343b] px-4 py-2 text-sm hover:bg-[#171b22]"
+        >
+          Cancel
+        </Link>
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-full bg-amber-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-[#e9b74e] px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? 'Posting...' : 'Post'}
         </button>
-        {communityId === '' && (
-          <p className="text-xs text-zinc-400">Select a community to post.</p>
-        )}
       </div>
     </form>
   )
