@@ -1,0 +1,3 @@
+git mv .github/Workflows .github/workflows
+git commit -m "Rename Workflows folder to lowercase"
+git push
