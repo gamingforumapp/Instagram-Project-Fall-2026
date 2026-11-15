@@ -165,7 +165,7 @@ export default function ProfileContent({
             <Link href="/" className="text-zinc-400 hover:text-white">
               ⌂ Home
             </Link>
-            <Link href="/#communities" className="text-zinc-400 hover:text-white">
+            <Link href="/communities" className="text-zinc-400 hover:text-white">
               Communities
             </Link>
 

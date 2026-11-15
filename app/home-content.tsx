@@ -89,9 +89,9 @@ export default function HomeContent({
             <Link href="/" className="text-[#e9b74e]">
               ⌂ Home
             </Link>
-            <a href="#communities" className="text-zinc-400 hover:text-white">
+            <Link href="/communities" className="text-zinc-400 hover:text-white">
               Communities
-            </a>
+            </Link>
 
             {viewer ? (
               <>
@@ -186,15 +186,24 @@ export default function HomeContent({
         <section id="communities" className="mb-9">
           <div className="mb-4 flex justify-between gap-3">
             <h2 className="text-lg font-semibold">Gaming Communities</h2>
-            <span className="text-xs text-zinc-500">
-              Find your game. Explore the conversation.
-            </span>
+            <div className="flex flex-wrap items-baseline justify-end gap-x-3 gap-y-1">
+              <span className="text-xs text-zinc-500">
+                Find your game. Explore the conversation.
+              </span>
+              <Link
+                href="/communities"
+                className="text-xs text-[#e9c980] hover:underline"
+              >
+                View all →
+              </Link>
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {filteredCommunities.map((c) => (
-              <article
+              <Link
                 key={c.id}
-                className="min-h-32 rounded-xl border border-[#292d34] bg-gradient-to-br from-[#20242b] to-[#0b0d11] p-4"
+                href={`/communities/${c.id}`}
+                className="block min-h-32 rounded-xl border border-[#292d34] bg-gradient-to-br from-[#20242b] to-[#0b0d11] p-4 transition hover:border-[#e9b74e]/60"
               >
                 <span className="rounded bg-[#211b12] px-2 py-1 text-[10px] text-[#e9c980]">
                   ◎ PUBLIC
@@ -203,7 +212,7 @@ export default function HomeContent({
                 <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
                   {c.description || 'Public gaming community'}
                 </p>
-              </article>
+              </Link>
             ))}
             {filteredCommunities.length === 0 && (
               <p className="col-span-full rounded-xl border border-[#292d34] p-6 text-sm text-zinc-400">
