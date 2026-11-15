@@ -133,7 +133,7 @@ function Shell({
   )
 }
 
-// Likes and comments are not built yet, so only the vote count is shown, as text.
+// Voting isn't built yet, so the vote count is shown as text. Comments link to the post.
 function PostItem({ post, signedIn }: { post: CommunityPost; signedIn: boolean }) {
   return (
     <article className="rounded-xl border border-[#292d34] bg-[#101319] p-5">
@@ -174,9 +174,14 @@ function PostItem({ post, signedIn }: { post: CommunityPost; signedIn: boolean }
           className="mt-4 max-h-96 rounded-lg border border-[#292d34]"
         />
       )}
-      <p className="mt-6 border-t border-[#23262b] pt-4 text-xs text-zinc-400">
-        {post.upvote_count} upvote{post.upvote_count === 1 ? '' : 's'}
-      </p>
+      <div className="mt-6 flex flex-wrap gap-5 border-t border-[#23262b] pt-4 text-xs text-zinc-400">
+        <span>
+          {post.upvote_count} upvote{post.upvote_count === 1 ? '' : 's'}
+        </span>
+        <Link href={`/posts/${post.id}#comments`} className="hover:text-white">
+          ◯ {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+        </Link>
+      </div>
     </article>
   )
 }

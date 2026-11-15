@@ -4,7 +4,7 @@ import type { FeedPost } from '@/components/post-card'
 import type { Tables } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 
-export type PostDetail = FeedPost & {
+export type PostDetail = Omit<FeedPost, 'commentCount'> & {
   author: Pick<Tables<'profiles'>, 'username' | 'display_name'> | null
   community: Pick<Tables<'communities'>, 'id' | 'name'> | null
 }

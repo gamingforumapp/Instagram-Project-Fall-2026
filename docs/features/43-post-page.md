@@ -15,6 +15,9 @@ Done when:
 - The post's comments show below it, using `PostComments` from PR #28 (merged).
 - Post titles in the homepage feed, profile feed, and community page link to
   the post's page.
+- Each post in those feeds shows its comment count ("◯ 3 comments"), linking to
+  the post's comments. Deleted comments aren't counted. (Added after #28 merged.
+  "Like" stays "Coming soon" until voting from #4 is built.)
 - A post id that doesn't exist, or isn't a valid id, shows the 404 page.
 - Signed-out visitors can read the post (the database already allows it).
 
@@ -71,6 +74,13 @@ Out of scope:
    `/posts/[id]`. This is a one-line edit to the communities feature, listed in
    the PR.
 
+5. Comment counts (added after #28 merged): the homepage, profile, and community
+   post queries also load `comments!comments_post_id_fkey(count)`, filtered with
+   `.is('comments.deleted_at', null)` so deleted comments aren't counted.
+   `FeedPost` and `CommunityPost` get `commentCount`. The "◯ Comment / Coming
+   soon" button in `PostCard`, and the community page's post footer, become a
+   link to `/posts/[id]#comments`.
+
 No database changes and no new dependencies.
 
 Auth: anyone can read posts and comments (existing policies). The page uses
@@ -103,6 +113,11 @@ Checked (Nov 15, on `feature/post-page`, signed out):
   Signed in (tested by Dominic), adding, replying, nested replies, deleting, and
   live updates in a second tab all work. This needed the import fix that is now
   on PR #28's branch.
+
+- Comment counts: lint, `tsc`, and the build pass. The homepage, both community
+  pages, and `/profile/tester` show counts. The post "test" shows 3 (its 2 deleted
+  comments aren't counted), and the others show 0. Clicking "3 comments" opens
+  the post at `#comments`. No console errors.
 
 Not checked:
 - NSFW and spoiler posts: none exist in the database to try.
