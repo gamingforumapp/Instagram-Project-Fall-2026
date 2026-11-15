@@ -2,12 +2,25 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 
+// Follow `next` only when it is a path on this site, as AGENTS.md requires.
+function sitePath(value: string | null): string {
+  if (
+    !value ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.startsWith('/\\')
+  ) {
+    return '/'
+  }
+  return value
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
-  let next = searchParams.get('next') ?? '/'
+  let next = sitePath(searchParams.get('next'))
 
   // If this is a password recovery flow, ensure destination is /update-password
   if (type === 'recovery' && next === '/') {
