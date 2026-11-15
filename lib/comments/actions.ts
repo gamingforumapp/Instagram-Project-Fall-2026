@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { CommentWithAuthor } from "@/types/comments";
+import { COMMENT_WITH_AUTHOR } from "@/lib/comments/select";
 
 export interface AddCommentResult {
   data?: CommentWithAuthor;
@@ -41,24 +42,7 @@ export async function addComment(
       content: trimmed,
       parent_comment_id: parentCommentId ?? null,
     })
-    .select(
-      `
-      id,
-      post_id,
-      author_id,
-      parent_comment_id,
-      content,
-      created_at,
-      updated_at,
-      deleted_at,
-      author:profiles (
-        id,
-        username,
-        display_name,
-        avatar_url
-      )
-    `
-    )
+    .select(COMMENT_WITH_AUTHOR)
     .single();
 
   if (error || !data) {
@@ -66,7 +50,7 @@ export async function addComment(
   }
 
   revalidatePath(`/posts/${postId}`);
-  return { data: data as unknown as CommentWithAuthor };
+  return { data: data };
 }
 
 export async function deleteComment(

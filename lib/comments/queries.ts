@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import type { CommentWithAuthor } from "@/types/comments";
+import { COMMENT_WITH_AUTHOR } from "@/lib/comments/select";
 
 export async function getCommentsForPost(
   postId: string
@@ -10,24 +11,7 @@ export async function getCommentsForPost(
 
   const { data, error } = await supabase
     .from("comments")
-    .select(
-      `
-      id,
-      post_id,
-      author_id,
-      parent_comment_id,
-      content,
-      created_at,
-      updated_at,
-      deleted_at,
-      author:profiles (
-        id,
-        username,
-        display_name,
-        avatar_url
-      )
-    `
-    )
+    .select(COMMENT_WITH_AUTHOR)
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
@@ -35,5 +19,5 @@ export async function getCommentsForPost(
     return [];
   }
 
-  return data as unknown as CommentWithAuthor[];
+  return data;
 }

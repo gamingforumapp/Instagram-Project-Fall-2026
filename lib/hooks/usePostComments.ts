@@ -8,6 +8,7 @@ import {
   deleteComment as serverDeleteComment,
 } from "@/lib/comments/actions";
 import type { CommentWithAuthor } from "@/types/comments";
+import { COMMENT_WITH_AUTHOR } from "@/lib/comments/select";
 
 export function usePostComments(
   postId: string,
@@ -26,31 +27,14 @@ export function usePostComments(
 
     const { data, error: fetchErr } = await supabase
       .from("comments")
-      .select(
-        `
-        id,
-        post_id,
-        author_id,
-        parent_comment_id,
-        content,
-        created_at,
-        updated_at,
-        deleted_at,
-        author:profiles (
-          id,
-          username,
-          display_name,
-          avatar_url
-        )
-      `
-      )
+      .select(COMMENT_WITH_AUTHOR)
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
 
     if (fetchErr) {
       setError(fetchErr.message);
     } else if (data) {
-      setComments(data as unknown as CommentWithAuthor[]);
+      setComments(data);
     }
     setLoading(false);
   }, [postId, supabase]);
@@ -64,24 +48,7 @@ export function usePostComments(
     if (initialComments.length === 0) {
       supabase
         .from("comments")
-        .select(
-          `
-          id,
-          post_id,
-          author_id,
-          parent_comment_id,
-          content,
-          created_at,
-          updated_at,
-          deleted_at,
-          author:profiles (
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `
-        )
+        .select(COMMENT_WITH_AUTHOR)
         .eq("post_id", postId)
         .order("created_at", { ascending: true })
         .then(({ data, error: fetchErr }) => {
@@ -89,7 +56,7 @@ export function usePostComments(
           if (fetchErr) {
             setError(fetchErr.message);
           } else if (data) {
-            setComments(data as unknown as CommentWithAuthor[]);
+            setComments(data);
           }
         });
     }
