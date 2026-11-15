@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Tables } from '@/lib/database.types'
 
@@ -43,7 +44,11 @@ export default function PostCard({
     <article className="rounded-xl border border-[#292d34] bg-[#101319] p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold">{post.title}</h3>
+          <h3 className="font-semibold">
+            <Link href={`/posts/${post.id}`} className="hover:underline">
+              {post.title}
+            </Link>
+          </h3>
           <p className="mt-1 text-xs text-zinc-500">
             {meta} · {dateFormat.format(new Date(post.created_at))}
           </p>
