@@ -1,5 +1,7 @@
+import "server-only";
+
 import { createClient } from "@/lib/supabase/server";
-import type { CommentWithAuthor, CommentThreadItem } from "@/types/comments";
+import type { CommentWithAuthor } from "@/types/comments";
 
 export async function getCommentsForPost(
   postId: string
@@ -34,26 +36,4 @@ export async function getCommentsForPost(
   }
 
   return data as unknown as CommentWithAuthor[];
-}
-
-export function nestCommentThreads(
-  comments: CommentWithAuthor[]
-): CommentThreadItem[] {
-  const map = new Map<string, CommentThreadItem>();
-  const roots: CommentThreadItem[] = [];
-
-  for (const c of comments) {
-    map.set(c.id, { ...c, replies: [] });
-  }
-
-  for (const c of comments) {
-    const item = map.get(c.id)!;
-    if (c.parent_comment_id && map.has(c.parent_comment_id)) {
-      map.get(c.parent_comment_id)!.replies!.push(item);
-    } else {
-      roots.push(item);
-    }
-  }
-
-  return roots;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { nestCommentThreads } from "@/lib/comments/queries";
+import { nestCommentThreads } from "@/lib/comments/thread";
 import {
   addComment as serverAddComment,
   deleteComment as serverDeleteComment,
