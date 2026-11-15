@@ -5,6 +5,14 @@ import Link from "next/link";
 import { usePostComments } from "@/lib/hooks/usePostComments";
 import type { CommentWithAuthor, CommentThreadItem } from "@/types/comments";
 
+// A fixed locale and time zone, so the server and the browser render the same
+// date and React doesn't report a hydration mismatch.
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
 interface PostCommentsProps {
   postId: string;
   initialComments?: CommentWithAuthor[];
@@ -226,10 +234,7 @@ function CommentItem({
               </span>
             )}
             <span className="ml-2 text-xs text-zinc-500">
-              {new Date(comment.created_at).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-              })}
+              {dateFormat.format(new Date(comment.created_at))}
             </span>
           </div>
         </div>
