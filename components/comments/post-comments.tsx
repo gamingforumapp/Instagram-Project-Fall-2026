@@ -65,7 +65,7 @@ export function PostComments({
             onChange={(e) => setTopLevelContent(e.target.value)}
             rows={3}
             placeholder="Share your thoughts on this clip or post..."
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-900/80 p-3 text-sm text-zinc-100 placeholder-zinc-500 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900/80 p-3 text-sm text-zinc-100 placeholder-zinc-500 shadow-sm focus:border-[#e9b74e] focus:outline-none focus:ring-1 focus:ring-[#e9b74e]"
           />
           {submitError && (
             <p className="text-xs text-red-400">{submitError}</p>
@@ -74,7 +74,7 @@ export function PostComments({
             <button
               type="submit"
               disabled={submitting || !topLevelContent.trim()}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-[#e9b74e] px-4 py-2 text-xs font-semibold text-black shadow-sm transition hover:bg-[#f0c665] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Posting..." : "Comment"}
             </button>
@@ -85,14 +85,14 @@ export function PostComments({
           <p className="text-sm text-zinc-400">
             <Link
               href="/login"
-              className="font-medium text-indigo-400 hover:underline"
+              className="font-medium text-[#e9c980] hover:underline"
             >
               Log in
             </Link>{" "}
             or{" "}
             <Link
               href="/signup"
-              className="font-medium text-indigo-400 hover:underline"
+              className="font-medium text-[#e9c980] hover:underline"
             >
               sign up
             </Link>{" "}
@@ -257,7 +257,7 @@ function CommentItem({
         <div>
           <button
             onClick={() => setIsReplying(!isReplying)}
-            className="text-xs font-medium text-zinc-400 hover:text-indigo-400 transition"
+            className="text-xs font-medium text-zinc-400 hover:text-[#e9c980] transition"
           >
             {isReplying ? "Cancel" : "Reply"}
           </button>
@@ -271,7 +271,7 @@ function CommentItem({
             onChange={(e) => setReplyContent(e.target.value)}
             rows={2}
             placeholder="Write a reply..."
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900/90 p-2 text-xs text-zinc-100 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-900/90 p-2 text-xs text-zinc-100 placeholder-zinc-500 focus:border-[#e9b74e] focus:outline-none focus:ring-1 focus:ring-[#e9b74e]"
           />
           {replyError && <p className="text-xs text-red-400">{replyError}</p>}
           <div className="flex gap-2 justify-end">
@@ -285,7 +285,7 @@ function CommentItem({
             <button
               type="submit"
               disabled={submittingReply || !replyContent.trim()}
-              className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:opacity-50"
+              className="rounded bg-[#e9b74e] px-3 py-1 text-xs font-semibold text-black shadow-sm transition hover:bg-[#f0c665] disabled:opacity-50"
             >
               {submittingReply ? "Posting..." : "Reply"}
             </button>
