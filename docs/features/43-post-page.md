@@ -1,6 +1,6 @@
 # View a single post
 
-**Status:** VERIFYING
+**Status:** READY FOR PR
 **Issue:** #43
 **Branch:** feature/post-page
 
@@ -98,10 +98,18 @@ Checked (Nov 15, on `feature/post-page`, signed out):
 - Signed in (tested by Dominic): the author name on the post "test" by @tester
   links to `/profile/tester`, and the other checks above also pass in the browser.
 
-Not checked yet:
+- With PR #28 combined locally (Nov 15, not committed): the "Coming soon" note
+  swapped for `<PostComments>`. Signed out, the log-in prompt and comments show.
+  Signed in (tested by Dominic), adding, replying, nested replies, deleting, and
+  live updates in a second tab all work. This needed the import fix that is now
+  on PR #28's branch.
+
+Not checked:
 - NSFW and spoiler posts: none exist in the database to try.
-- With PR #28 combined locally.
 
 ## Notes
+- Hooking up comments after PR #28 merges: replace the Comments section's
+  heading and "Coming soon" note with `<PostComments postId={post.id}
+  currentUserId={viewer?.userId} />`. The component has its own heading.
 - Page title (the browser tab) stays the site default. Setting it to the post
   title can come later.

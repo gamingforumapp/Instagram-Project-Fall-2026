@@ -100,8 +100,9 @@ export default async function PostPage({ params }: PostPageProps) {
         </p>
       </article>
 
-      {/* The comments from PR #28 go here once it merges:
-          <PostComments postId={post.id} currentUserId={viewer?.userId} /> */}
+      {/* Once PR #28 merges, replace this section's heading and note with
+          <PostComments postId={post.id} currentUserId={viewer?.userId} />.
+          The component has its own "Comments" heading. */}
       <section id="comments" className="mt-8">
         <h2 className="text-lg font-semibold">Comments</h2>
         <p className="mt-4 rounded-xl border border-[#292d34] p-6 text-sm text-zinc-400">
