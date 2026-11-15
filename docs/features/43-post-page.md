@@ -12,7 +12,7 @@ Done when:
 - `/posts/[id]` shows one post: title, full text, full-size image, author
   (linked to their profile), community (linked to its page), date, and vote
   count.
-- The post's comments show below it, using `PostComments` from PR #28.
+- The post's comments show below it, using `PostComments` from PR #28 (merged).
 - Post titles in the homepage feed, profile feed, and community page link to
   the post's page.
 - A post id that doesn't exist, or isn't a valid id, shows the 404 page.
@@ -61,9 +61,9 @@ Out of scope:
      vote count as text.
    - The author links to their profile only when signed in, the same as the feeds
      do now. Signed-out visitors see the name without a link.
-   - Below the post, a "Comments" section with a "Coming soon" note. This is where
-     `<PostComments postId={post.id} currentUserId={viewer?.userId} />` goes once
-     PR #28 merges.
+   - Below the post, `<PostComments postId={post.id} currentUserId={viewer?.userId} />`
+     from PR #28. (At first this was a "Coming soon" note. #28 merged before this
+     PR, so the comments were hooked up here.)
    - Dates use the fixed `en-US`/UTC formatter.
 3. `components/post-card.tsx`: the title becomes a link to `/posts/[id]`. This
    covers the homepage and profile feeds, since both use `PostCard`.
@@ -108,8 +108,7 @@ Not checked:
 - NSFW and spoiler posts: none exist in the database to try.
 
 ## Notes
-- Hooking up comments after PR #28 merges: replace the Comments section's
-  heading and "Coming soon" note with `<PostComments postId={post.id}
-  currentUserId={viewer?.userId} />`. The component has its own heading.
+- PR #28 merged before this PR, so `main` was merged into this branch and the
+  "Coming soon" note was replaced with `PostComments`.
 - Page title (the browser tab) stays the site default. Setting it to the post
   title can come later.

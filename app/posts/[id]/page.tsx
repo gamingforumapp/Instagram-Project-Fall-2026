@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PostComments } from '@/components/comments/post-comments'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { isUuid } from '@/lib/communities/ids'
@@ -100,17 +101,9 @@ export default async function PostPage({ params }: PostPageProps) {
         </p>
       </article>
 
-      {/* Once PR #28 merges, replace this section's heading and note with
-          <PostComments postId={post.id} currentUserId={viewer?.userId} />.
-          The component has its own "Comments" heading. */}
+      {/* PostComments has its own "Comments" heading. */}
       <section id="comments" className="mt-8">
-        <h2 className="text-lg font-semibold">Comments</h2>
-        <p className="mt-4 rounded-xl border border-[#292d34] p-6 text-sm text-zinc-400">
-          Comments are{' '}
-          <span className="rounded bg-[#211b12] px-1.5 py-0.5 text-[10px] text-[#e9c980]">
-            Coming soon
-          </span>
-        </p>
+        <PostComments postId={post.id} currentUserId={viewer?.userId} />
       </section>
     </Shell>
   )
