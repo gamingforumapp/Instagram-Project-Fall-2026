@@ -18,7 +18,13 @@ export type Profile = Pick<
   is_own_profile: boolean
 }
 
+export interface UsernameCooldown {
+  canChange: boolean
+  daysRemaining: number
+}
+
 export interface UpdateProfileInput {
+  username?: string
   displayName?: string
   bio?: string
   avatarUrl?: string

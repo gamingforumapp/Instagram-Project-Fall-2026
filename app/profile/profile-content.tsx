@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Crest from '@/components/crest'
 import PostCard, { ComingSoonAction } from '@/components/post-card'
-import { saveGamerTags, updateProfile } from '@/lib/profile/actions'
+import {
+  checkUsernameAvailable,
+  saveGamerTags,
+  updateProfile,
+} from '@/lib/profile/actions'
 import type { ProfileCommunity, ProfilePost } from '@/lib/profile/queries'
 import { createClient } from '@/lib/supabase/client'
-import type { GamerTags, Profile } from '@/types/profile'
+import type { GamerTags, Profile, UsernameCooldown } from '@/types/profile'
 
 interface ProfileContentProps {
   profile?: Profile
@@ -18,6 +22,7 @@ interface ProfileContentProps {
   postsError: boolean
   communities: ProfileCommunity[]
   isSignedIn: boolean
+  usernameCooldown?: UsernameCooldown
 }
 
 const GAMER_TAG_PLATFORMS: {
@@ -57,6 +62,7 @@ export default function ProfileContent({
   postsError,
   communities,
   isSignedIn,
+  usernameCooldown,
 }: ProfileContentProps) {
   const router = useRouter()
   const isOwner = isOwnProfile
@@ -68,6 +74,10 @@ export default function ProfileContent({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
 
   // Edit form state
+  const [editUsername, setEditUsername] = useState('')
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null)
+  const [isChangingUsername, setIsChangingUsername] = useState(false)
   const [editDisplayName, setEditDisplayName] = useState('')
   const [editBio, setEditBio] = useState('')
   const [editTags, setEditTags] = useState<GamerTags>({})
@@ -87,6 +97,9 @@ export default function ProfileContent({
   const bio = profile?.bio
   const gamerTags = profile?.gamer_tags ?? {}
   const hasGamerTags = GAMER_TAG_PLATFORMS.some(({ key }) => gamerTags[key])
+  const isUsernameLocked = Boolean(
+    usernameCooldown && !usernameCooldown.canChange && username !== null
+  )
 
   const copyToClipboard = (platform: string, tag: string) => {
     navigator.clipboard.writeText(tag)
@@ -104,18 +117,66 @@ export default function ProfileContent({
     setTimeout(() => setCopiedProfileLink(false), 2000)
   }
 
+  const handleChangeUsername = async () => {
+    const trimmed = editUsername.trim().toLowerCase()
+    setUsernameError(null)
+    setUsernameSuccess(null)
+
+    if (!trimmed) {
+      setUsernameError('Please enter a username.')
+      return
+    }
+
+    if (!/^[a-z0-9_]{3,30}$/.test(trimmed)) {
+      setUsernameError(
+        'Username must be 3–30 characters and contain only lowercase letters, numbers, or underscores.'
+      )
+      return
+    }
+
+    if (trimmed === (username ?? '')) {
+      setUsernameError('You are already using this username.')
+      return
+    }
+
+    setIsChangingUsername(true)
+    const res = await updateProfile({ username: trimmed })
+    setIsChangingUsername(false)
+
+    if (!res.success) {
+      setUsernameError(res.error || 'Failed to update username.')
+    } else {
+      setUsernameSuccess('Username changed successfully!')
+      router.refresh()
+    }
+  }
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
     setEditStatus(null)
+    setUsernameError(null)
+
+    const trimmedUser = editUsername.trim().toLowerCase()
+    const shouldUpdateUsername =
+      trimmedUser && trimmedUser !== (username ?? '')
 
     const profileRes = await updateProfile({
+      ...(shouldUpdateUsername ? { username: trimmedUser } : {}),
       displayName: editDisplayName,
       bio: editBio,
     })
 
     if (!profileRes.success) {
-      setEditStatus(profileRes.error || 'Failed to update profile.')
+      if (
+        profileRes.error?.toLowerCase().includes('taken') ||
+        profileRes.error?.toLowerCase().includes('already exists') ||
+        profileRes.error?.toLowerCase().includes('7 days')
+      ) {
+        setUsernameError(profileRes.error)
+      } else {
+        setEditStatus(profileRes.error || 'Failed to update profile.')
+      }
       setIsSaving(false)
       return
     }
@@ -123,7 +184,9 @@ export default function ProfileContent({
     const tagsRes = await saveGamerTags(editTags)
 
     if (!tagsRes.success) {
-      setEditStatus(tagsRes.error || 'Profile updated, but failed to save gamer tags.')
+      setEditStatus(
+        tagsRes.error || 'Profile updated, but failed to save gamer tags.'
+      )
     } else {
       setEditStatus('Profile and gamer tags updated successfully!')
       router.refresh()
@@ -143,6 +206,9 @@ export default function ProfileContent({
   }
 
   const openEditModal = () => {
+    setEditUsername(username ?? '')
+    setUsernameError(null)
+    setUsernameSuccess(null)
     setEditDisplayName(profile?.display_name ?? '')
     setEditBio(bio ?? '')
     setEditTags(gamerTags)
@@ -507,6 +573,78 @@ export default function ProfileContent({
                   {editStatus}
                 </div>
               )}
+
+              {/* Username Section with dedicated button, red error text if taken, and 7-day cooldown subnote */}
+              <div className="rounded-lg border border-[#282c34] bg-[#0e1116] p-3.5 space-y-2">
+                <label className={fieldLabel}>
+                  Username (3–30 characters, lowercase letters, numbers, _)
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 font-mono text-sm text-zinc-500">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      maxLength={30}
+                      value={editUsername}
+                      onChange={(e) => {
+                        setEditUsername(
+                          e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                        )
+                        setUsernameError(null)
+                        setUsernameSuccess(null)
+                      }}
+                      onBlur={async () => {
+                        const trimmed = editUsername.trim().toLowerCase()
+                        if (trimmed && trimmed !== (username ?? '')) {
+                          const check = await checkUsernameAvailable(trimmed)
+                          if (!check.available && check.error) {
+                            setUsernameError(check.error)
+                          }
+                        }
+                      }}
+                      disabled={isUsernameLocked || isChangingUsername}
+                      placeholder="your_username"
+                      className={`${fieldInput} !mt-0 !pl-8 font-mono text-[#f4f1eb] disabled:cursor-not-allowed disabled:opacity-50`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleChangeUsername}
+                    disabled={
+                      isUsernameLocked ||
+                      isChangingUsername ||
+                      !editUsername.trim() ||
+                      editUsername.trim() === (username ?? '')
+                    }
+                    className={`${primaryButton} whitespace-nowrap text-xs font-semibold px-3 py-2 disabled:cursor-not-allowed disabled:opacity-40`}
+                  >
+                    {isChangingUsername ? 'Changing...' : 'Change username'}
+                  </button>
+                </div>
+
+                {/* Red text if username is already taken or invalid */}
+                {usernameError && (
+                  <p role="alert" className="text-xs font-medium text-red-500">
+                    {usernameError}
+                  </p>
+                )}
+
+                {/* Success feedback */}
+                {usernameSuccess && (
+                  <p role="status" className="text-xs font-medium text-emerald-400">
+                    {usernameSuccess}
+                  </p>
+                )}
+
+                {/* Subnote mentioning that usernames can be changed once every 7 days */}
+                <p className="text-[11px] font-normal text-zinc-400">
+                  {isUsernameLocked
+                    ? `Username locked: You can change your username again in ${usernameCooldown?.daysRemaining} day${usernameCooldown?.daysRemaining === 1 ? '' : 's'}.`
+                    : 'Subnote: Usernames can be changed once every 7 days.'}
+                </p>
+              </div>
 
               <label className={fieldLabel}>
                 Display name (max 100 characters)
