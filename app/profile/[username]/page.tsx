@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { getUsernameCooldown } from '@/lib/profile/cooldown'
 import {
   getProfileByUsername,
   getProfileCommunities,
@@ -39,6 +40,16 @@ export default async function ProfileUsernamePage({
       getProfileCommunities(profile.id),
     ])
 
+  let usernameCooldown = { canChange: true, daysRemaining: 0 }
+
+  if (profile.is_own_profile) {
+    const { data: userData } = await supabase.auth.getUser()
+    const rawChangedAt =
+      (userData?.user?.user_metadata?.username_changed_at as string | undefined) ||
+      userData?.user?.created_at
+    usernameCooldown = getUsernameCooldown(rawChangedAt, Boolean(profile.username))
+  }
+
   return (
     <ProfileContent
       profile={profile}
@@ -48,6 +59,7 @@ export default async function ProfileUsernamePage({
       postsError={postsError}
       communities={communities}
       isSignedIn={Boolean(claimsData?.claims?.sub)}
+      usernameCooldown={usernameCooldown}
     />
   )
 }

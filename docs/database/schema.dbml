@@ -52,6 +52,7 @@ Table profiles {
   avatar_url text [note: 'Full URL: the OAuth picture, or the public URL of avatars/{user_id}/{random}.webp']
   region text [check: `region in ('na', 'latam', 'eu', 'mea', 'asia', 'oce')`, note: 'SOON (find players). Coarse region only, for privacy.']
   created_at timestamptz [not null, default: `now()`]
+  username_changed_at timestamptz [note: 'Timestamp when username was last set or updated. Enforces 7-day cooldown.']
 
   checks {
     `username ~ '^[a-z0-9_]{3,30}$'` [name: 'profiles_username_format']

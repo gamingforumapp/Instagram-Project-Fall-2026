@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getUsernameCooldown } from '@/lib/profile/cooldown'
 import {
   getCurrentUserProfile,
   getProfileCommunities,
@@ -33,11 +34,19 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     redirect('/login?next=/profile')
   }
 
+  const { data: userData } = await supabase.auth.getUser()
+
   const profile = (await getCurrentUserProfile(isPreview)) || undefined
   const [{ posts, error: postsError }, communities] = await Promise.all([
     profile ? getProfilePosts(profile.id) : { posts: [], error: false },
     profile ? getProfileCommunities(profile.id) : [],
   ])
+
+  const rawChangedAt =
+    (userData?.user?.user_metadata?.username_changed_at as string | undefined) ||
+    userData?.user?.created_at
+
+  const usernameCooldown = getUsernameCooldown(rawChangedAt, Boolean(profile?.username))
 
   return (
     <ProfileContent
@@ -47,6 +56,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       postsError={postsError}
       communities={communities}
       isSignedIn={Boolean(userId)}
+      usernameCooldown={usernameCooldown}
     />
   )
 }

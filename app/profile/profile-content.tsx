@@ -8,7 +8,7 @@ import PostCard, { ComingSoonAction } from '@/components/post-card'
 import { saveGamerTags, updateProfile } from '@/lib/profile/actions'
 import type { ProfileCommunity, ProfilePost } from '@/lib/profile/queries'
 import { createClient } from '@/lib/supabase/client'
-import type { GamerTags, Profile } from '@/types/profile'
+import type { GamerTags, Profile, UsernameCooldown } from '@/types/profile'
 
 interface ProfileContentProps {
   profile?: Profile
@@ -18,6 +18,7 @@ interface ProfileContentProps {
   postsError: boolean
   communities: ProfileCommunity[]
   isSignedIn: boolean
+  usernameCooldown?: UsernameCooldown
 }
 
 const GAMER_TAG_PLATFORMS: {
@@ -57,6 +58,7 @@ export default function ProfileContent({
   postsError,
   communities,
   isSignedIn,
+  usernameCooldown,
 }: ProfileContentProps) {
   const router = useRouter()
   const isOwner = isOwnProfile
@@ -68,6 +70,7 @@ export default function ProfileContent({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
 
   // Edit form state
+  const [editUsername, setEditUsername] = useState('')
   const [editDisplayName, setEditDisplayName] = useState('')
   const [editBio, setEditBio] = useState('')
   const [editTags, setEditTags] = useState<GamerTags>({})
@@ -110,6 +113,7 @@ export default function ProfileContent({
     setEditStatus(null)
 
     const profileRes = await updateProfile({
+      username: editUsername,
       displayName: editDisplayName,
       bio: editBio,
     })
@@ -143,6 +147,7 @@ export default function ProfileContent({
   }
 
   const openEditModal = () => {
+    setEditUsername(username ?? '')
     setEditDisplayName(profile?.display_name ?? '')
     setEditBio(bio ?? '')
     setEditTags(gamerTags)
@@ -507,6 +512,35 @@ export default function ProfileContent({
                   {editStatus}
                 </div>
               )}
+
+              <label className={fieldLabel}>
+                Username (3–30 characters, lowercase letters, numbers, _)
+                <div className="relative mt-1">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 font-mono text-sm text-zinc-500">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={30}
+                    value={editUsername}
+                    onChange={(e) =>
+                      setEditUsername(
+                        e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                      )
+                    }
+                    disabled={
+                      Boolean(usernameCooldown && !usernameCooldown.canChange && username !== null)
+                    }
+                    placeholder="your_username"
+                    className={`${fieldInput} !mt-0 !pl-8 font-mono text-[#f4f1eb] disabled:cursor-not-allowed disabled:opacity-50`}
+                  />
+                </div>
+                <span className="mt-1 block text-[11px] font-normal text-zinc-400">
+                  {usernameCooldown && !usernameCooldown.canChange && username !== null
+                    ? `Username locked: You can change your username again in ${usernameCooldown.daysRemaining} day${usernameCooldown.daysRemaining === 1 ? '' : 's'}.`
+                    : 'Must be unique. Once changed, you must wait 7 days before changing it again.'}
+                </span>
+              </label>
 
               <label className={fieldLabel}>
                 Display name (max 100 characters)
