@@ -16,11 +16,15 @@ export type HomePost = FeedPost & {
 
 export type HomeViewer = { displayName: string }
 
+export type HomeFeed = 'everyone' | 'following'
+
 type Props = {
   communities: Community[]
   posts: HomePost[]
   dataState: 'ready' | 'error' | 'unconfigured'
   viewer: HomeViewer | null
+  feed: HomeFeed
+  canFilterFeed: boolean
 }
 
 export default function HomeContent({
@@ -28,6 +32,8 @@ export default function HomeContent({
   posts,
   dataState,
   viewer,
+  feed,
+  canFilterFeed,
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -245,6 +251,33 @@ export default function HomeContent({
               </label>
             </div>
 
+            {canFilterFeed && (
+              <nav aria-label="Feed" className="mb-3 flex gap-2 text-sm">
+                <Link
+                  href="/"
+                  aria-current={feed === 'everyone' ? 'page' : undefined}
+                  className={
+                    feed === 'everyone'
+                      ? 'rounded-lg bg-[#e9b74e] px-3 py-1.5 font-semibold text-black'
+                      : 'rounded-lg border border-[#30343b] px-3 py-1.5 hover:bg-[#171b22]'
+                  }
+                >
+                  Everyone
+                </Link>
+                <Link
+                  href="/?feed=following"
+                  aria-current={feed === 'following' ? 'page' : undefined}
+                  className={
+                    feed === 'following'
+                      ? 'rounded-lg bg-[#e9b74e] px-3 py-1.5 font-semibold text-black'
+                      : 'rounded-lg border border-[#30343b] px-3 py-1.5 hover:bg-[#171b22]'
+                  }
+                >
+                  Following
+                </Link>
+              </nav>
+            )}
+
             <div className="mb-3 flex items-center justify-between rounded-xl border border-[#292d34] bg-[#101319] p-4">
               <div>
                 <h3 className="text-sm font-semibold">
@@ -302,8 +335,11 @@ export default function HomeContent({
               ))}
               {filteredPosts.length === 0 && (
                 <p className="rounded-xl border border-[#292d34] p-6 text-sm text-zinc-400">
-                  No public posts{' '}
-                  {search ? 'match your search.' : 'available yet.'}
+                  {search
+                    ? 'No public posts match your search.'
+                    : feed === 'following'
+                      ? 'No posts from gamers you follow yet. Follow gamers from their profiles to fill this feed.'
+                      : 'No public posts available yet.'}
                 </p>
               )}
             </div>

@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Crest from '@/components/crest'
-import PostCard, { ComingSoonAction } from '@/components/post-card'
+import PostCard from '@/components/post-card'
 import { saveGamerTags, updateProfile } from '@/lib/profile/actions'
 import type { ProfileCommunity, ProfilePost } from '@/lib/profile/queries'
 import { createClient } from '@/lib/supabase/client'
-import type { GamerTags, Profile } from '@/types/profile'
+import type { FollowStats, GamerTags, Profile } from '@/types/profile'
+import FollowButton from './follow-button'
 
 interface ProfileContentProps {
   profile?: Profile
@@ -18,6 +19,7 @@ interface ProfileContentProps {
   postsError: boolean
   communities: ProfileCommunity[]
   isSignedIn: boolean
+  followStats?: FollowStats | null
 }
 
 const GAMER_TAG_PLATFORMS: {
@@ -57,6 +59,7 @@ export default function ProfileContent({
   postsError,
   communities,
   isSignedIn,
+  followStats = null,
 }: ProfileContentProps) {
   const router = useRouter()
   const isOwner = isOwnProfile
@@ -274,10 +277,23 @@ export default function ProfileContent({
                       )}
                     </div>
                   </>
+                ) : !isSignedIn ? (
+                  username && (
+                    <Link
+                      href={`/login?next=/profile/${encodeURIComponent(username)}`}
+                      className={secondaryButton}
+                    >
+                      Sign in to follow
+                    </Link>
+                  )
                 ) : (
-                  <div className="rounded-lg border border-[#30343b] px-3 py-2 text-sm">
-                    <ComingSoonAction label="Follow" />
-                  </div>
+                  profile &&
+                  followStats && (
+                    <FollowButton
+                      targetId={profile.id}
+                      isFollowing={followStats.isFollowing}
+                    />
+                  )
                 )}
               </div>
             </div>
@@ -289,6 +305,19 @@ export default function ProfileContent({
               <p className="mt-1 text-sm text-zinc-500">
                 {username ? `@${username}` : 'No username yet'}
               </p>
+              {followStats && (
+                <p className="mt-2 text-sm text-zinc-400">
+                  <span className="font-semibold text-[#f4f1eb]">
+                    {followStats.followers}
+                  </span>{' '}
+                  {followStats.followers === 1 ? 'follower' : 'followers'}
+                  {' · '}
+                  <span className="font-semibold text-[#f4f1eb]">
+                    {followStats.following}
+                  </span>{' '}
+                  following
+                </p>
+              )}
             </div>
 
             <div className="mt-4 max-w-2xl text-sm text-zinc-300">
