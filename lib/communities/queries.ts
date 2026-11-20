@@ -23,6 +23,8 @@ export type CommunityPost = Pick<
 > & {
   authorUsername: string | null
   imageUrl: string | null
+  /** Comments that haven't been deleted. */
+  commentCount: number
 }
 
 export type MembershipRole = Tables<'community_members'>['role'] | null
@@ -107,9 +109,11 @@ export async function getCommunityPosts(
   const { data, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, created_at, upvote_count, image_path, profiles!posts_author_id_fkey(username)'
+      'id, title, content, created_at, upvote_count, image_path, profiles!posts_author_id_fkey(username), comments!comments_post_id_fkey(count)'
     )
     .eq('community_id', communityId)
+    // Count only comments that haven't been deleted.
+    .is('comments.deleted_at', null)
     .eq('is_nsfw', false)
     .eq('is_spoiler', false)
     .order('created_at', { ascending: false })
@@ -120,9 +124,10 @@ export async function getCommunityPosts(
     return { ok: false }
   }
 
-  const posts = data.map(({ image_path, profiles, ...post }) => ({
+  const posts = data.map(({ image_path, profiles, comments, ...post }) => ({
     ...post,
     authorUsername: profiles?.username ?? null,
+    commentCount: comments[0]?.count ?? 0,
     imageUrl: image_path
       ? supabase.storage.from('post-images').getPublicUrl(image_path).data
           .publicUrl

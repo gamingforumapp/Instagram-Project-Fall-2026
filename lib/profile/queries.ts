@@ -145,9 +145,11 @@ export async function getProfilePosts(
   const { data, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, created_at, upvote_count, image_path, communities(name)'
+      'id, title, content, created_at, upvote_count, image_path, communities(name), comments!comments_post_id_fkey(count)'
     )
     .eq('author_id', profileId)
+    // Count only comments that haven't been deleted.
+    .is('comments.deleted_at', null)
     .eq('is_nsfw', false)
     .eq('is_spoiler', false)
     .order('created_at', { ascending: false })
@@ -158,9 +160,10 @@ export async function getProfilePosts(
   }
 
   return {
-    posts: data.map(({ image_path, communities, ...post }) => ({
+    posts: data.map(({ image_path, communities, comments, ...post }) => ({
       ...post,
       communityName: communities?.name ?? null,
+      commentCount: comments[0]?.count ?? 0,
       imageUrl: image_path
         ? supabase.storage.from('post-images').getPublicUrl(image_path).data
             .publicUrl

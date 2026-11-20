@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Tables } from '@/lib/database.types'
 
@@ -6,6 +7,8 @@ export type FeedPost = Pick<
   'id' | 'title' | 'content' | 'created_at' | 'upvote_count'
 > & {
   imageUrl: string | null
+  /** Comments that haven't been deleted. */
+  commentCount: number
 }
 
 // A fixed locale and time zone, so the server and the browser render the same
@@ -43,7 +46,11 @@ export default function PostCard({
     <article className="rounded-xl border border-[#292d34] bg-[#101319] p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold">{post.title}</h3>
+          <h3 className="font-semibold">
+            <Link href={`/posts/${post.id}`} className="hover:underline">
+              {post.title}
+            </Link>
+          </h3>
           <p className="mt-1 text-xs text-zinc-500">
             {meta} · {dateFormat.format(new Date(post.created_at))}
           </p>
@@ -66,7 +73,9 @@ export default function PostCard({
       )}
       <div className="mt-6 flex flex-wrap gap-5 border-t border-[#23262b] pt-4 text-xs text-zinc-400">
         <ComingSoonAction label={`♡ Like (${post.upvote_count})`} />
-        <ComingSoonAction label="◯ Comment" />
+        <Link href={`/posts/${post.id}#comments`} className="hover:text-white">
+          ◯ {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+        </Link>
       </div>
     </article>
   )
