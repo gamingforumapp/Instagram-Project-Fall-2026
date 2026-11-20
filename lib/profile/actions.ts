@@ -236,3 +236,57 @@ export async function saveGamerTags(tags: {
   revalidatePath('/profile')
   return { success: true }
 }
+
+
+/**
+ * Checks whether a given username is available for registration or change.
+ * Returns { available: boolean; error?: string }
+ */
+export async function checkUsernameAvailable(rawUsername: string): Promise<{
+  available: boolean
+  error?: string
+}> {
+  const supabase = await createClient()
+  const trimmed = rawUsername.trim().toLowerCase()
+
+  if (!trimmed) {
+    return { available: false, error: 'Please enter a username.' }
+  }
+
+  if (!/^[a-z0-9_]{3,30}$/.test(trimmed)) {
+    return {
+      available: false,
+      error:
+        'Username must be 3–30 characters and contain only lowercase letters, numbers, or underscores.',
+    }
+  }
+
+  const { data: userData } = await supabase.auth.getUser()
+
+  let query = supabase.from('profiles').select('id').eq('username', trimmed)
+  if (userData?.user?.id) {
+    query = query.neq('id', userData.user.id)
+  }
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    return { available: false, error: error.message }
+  }
+
+  if (data) {
+    return {
+      available: false,
+      error: 'That username is already taken. Please choose another one.',
+    }
+  }
+
+  return { available: true }
+}
+
+/**
+ * Server Action specifically for updating a gamer's username.
+ */
+export async function changeUsername(newUsername: string) {
+  return updateProfile({ username: newUsername })
+}
