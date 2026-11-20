@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getFollowStats } from '@/lib/follows/queries'
 import { createClient } from '@/lib/supabase/server'
 import {
   getCurrentUserProfile,
@@ -39,6 +40,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     profile ? getProfileCommunities(profile.id) : [],
   ])
 
+  // Preview mode has no real account to count follows for.
+  const followStats =
+    userId && profile ? await getFollowStats(profile.id, userId) : null
+
   return (
     <ProfileContent
       profile={profile}
@@ -47,6 +52,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       postsError={postsError}
       communities={communities}
       isSignedIn={Boolean(userId)}
+      followStats={followStats}
     />
   )
 }

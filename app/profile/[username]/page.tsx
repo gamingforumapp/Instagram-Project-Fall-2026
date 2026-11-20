@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import { getFollowStats } from '@/lib/follows/queries'
 import {
+  FALLBACK_PROFILE_ID,
   getProfileByUsername,
   getProfileCommunities,
   getProfilePosts,
@@ -38,6 +40,14 @@ export default async function ProfileUsernamePage({
       getProfilePosts(profile.id),
       getProfileCommunities(profile.id),
     ])
+  const viewerId = claimsData?.claims?.sub ?? null
+
+  // Only signed-in users can read follows, so signed-out visitors get no
+  // counts. The sample profile isn't a real account, so it has none either.
+  const followStats =
+    viewerId && profile.id !== FALLBACK_PROFILE_ID
+      ? await getFollowStats(profile.id, viewerId)
+      : null
 
   return (
     <ProfileContent
@@ -47,7 +57,8 @@ export default async function ProfileUsernamePage({
       posts={posts}
       postsError={postsError}
       communities={communities}
-      isSignedIn={Boolean(claimsData?.claims?.sub)}
+      isSignedIn={Boolean(viewerId)}
+      followStats={followStats}
     />
   )
 }

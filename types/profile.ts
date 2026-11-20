@@ -23,3 +23,10 @@ export interface UpdateProfileInput {
   bio?: string
   avatarUrl?: string
 }
+
+export interface FollowStats {
+  followers: number
+  following: number
+  /** Whether the signed-in viewer follows this profile. Always false on their own profile. */
+  isFollowing: boolean
+}

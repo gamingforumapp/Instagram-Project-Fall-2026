@@ -16,8 +16,11 @@ export type ProfileCommunity = Pick<Tables<'communities'>, 'id' | 'name'> & {
 const PROFILE_COLUMNS =
   'id, username, display_name, bio, avatar_url, region, created_at'
 
+/** Id of the sample profile shown when a username isn't found. It is not a real account. */
+export const FALLBACK_PROFILE_ID = '00000000-0000-0000-0000-000000000001'
+
 const FALLBACK_PROFILE: Omit<Profile, 'is_own_profile'> = {
-  id: '00000000-0000-0000-0000-000000000001',
+  id: FALLBACK_PROFILE_ID,
   username: 'nightowl_kai',
   display_name: 'Kai Rivera',
   avatar_url: null,
